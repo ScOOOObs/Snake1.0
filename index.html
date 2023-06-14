@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      background-color: #f5deb3; /* Light Brown */
+    }
+
+    #dot {
+      width: 20px;
+      height: 20px;
+      background-color: green;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: none; /* Initially hidden */
+    }
+
+    .red-dot {
+      width: 20px;
+      height: 20px;
+      background-color: red;
+      position: absolute;
+    }
+
+    #grid {
+      width: calc(100% - 200px);
+      height: calc(100vh - 200px);
+      position: relative;
+      background-color: transparent;
+      margin: 100px;
+      border: 1px solid black; /* Added border */
+    }
+
+    #score {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      color: white;
+      font-size: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div id="grid"></div>
+  <div id="dot"></div>
+  <div id="score">Score: 0</div>
+
+  <script>
+    var grid = document.getElementById("grid");
+    var dot = document.getElementById("dot");
+    var dotPosition = { x: 0, y: 0 };
+    var step = 20;
+    var direction = null;
+    var intervalId = null;
+    var isFirstMove = true;
+    var redDots = [];
+    var maxRedDots = 5;
+    var score = 0;
+    var scoreElement = document.getElementById("score");
+
+    document.addEventListener("keydown", handleKeyPress);
+
+    function handleKeyPress(event) {
+      var keyPressed = event.key.toLowerCase();
+
+      if (keyPressed === "w" || keyPressed === "a" || keyPressed === "s" || keyPressed === "d") {
+        if (isFirstMove) {
+          isFirstMove = false;
+          dot.style.display = "block"; // Show the dot
+          dotPosition.x = grid.offsetWidth / 2; // Set initial X position to center
+          dotPosition.y = grid.offsetHeight / 2; // Set initial Y position to center
+          dot.style.top = dotPosition.y + "px";
+          dot.style.left = dotPosition.x + "px";
+        }
+
+        if (direction !== null && keyPressed === direction) {
+          return; // Ignore the same direction
+        }
+
+        clearInterval(intervalId);
+
+        switch (keyPressed) {
+          case "w":
+            dotPosition.y -= step;
+            break;
+          case "a":
+            dotPosition.x -= step;
+            break;
+          case "s":
+            dotPosition.y += step;
+            break;
+          case "d":
+            dotPosition.x += step;
+            break;
+        }
+
+        dot.style.top = dotPosition.y + "px";
+        dot.style.left = dotPosition.x + "px";
+
+        intervalId = setInterval(moveDot, 100);
+        direction = keyPressed;
+
+        checkCollision();
+      }
+    }
+
+    function moveDot() {
+      var gridRect = grid.getBoundingClientRect();
+      var dotRect = dot.getBoundingClientRect();
+
+      if (
+        dotRect.top <= gridRect.top ||
+        dotRect.left <= gridRect.left ||
+        dotRect.bottom >= gridRect.bottom ||
+        dotRect.right >= gridRect.right
+      ) {
+        clearInterval(intervalId);
+        restartDotPosition();
+        return;
+      }
+
+      switch (direction) {
+        case "w":
+          dotPosition.y -= step;
+          break;
+        case "a":
+          dotPosition.x -= step;
+          break;
+        case "s":
+          dotPosition.y += step;
+          break;
+        case "d":
+          dotPosition.x += step;
+          break;
+      }
+
+      dot.style.top = dotPosition.y + "px";
+      dot.style.left = dotPosition.x + "px";
+
+      checkCollision();
+    }
+
+    function restartDotPosition() {
+      isFirstMove = true;
+      dot.style.display = "none"; // Hide the dot
+      dotPosition.x = 0;
+      dotPosition.y = 0;
+    }
+
+    function checkCollision() {
+      var dotRect = dot.getBoundingClientRect();
+
+      for (var i = 0; i < redDots.length; i++) {
+        var redDot = redDots[i];
+        var redDotRect = redDot.getBoundingClientRect();
+
+        if (
+          dotRect.top < redDotRect.bottom &&
+          dotRect.right > redDotRect.left &&
+          dotRect.bottom > redDotRect.top &&
+          dotRect.left < redDotRect.right
+        ) {
+          redDot.remove();
+          redDots.splice(i, 1);
+          i--;
+          spawnRedDot();
+          score++;
+          updateScore();
+        }
+      }
+    }
+
+    function spawnRedDot() {
+      if (redDots.length >= maxRedDots) {
+        return; // Limit reached, no more red dots
+      }
+
+      var redDot = document.createElement("div");
+      redDot.classList.add("red-dot");
+
+      // Generate random position within the grid
+      var randomX = getRandomInt(grid.offsetWidth - 20); // Subtract red dot width
+      var randomY = getRandomInt(grid.offsetHeight - 20); // Subtract red dot height
+
+      redDot.style.top = randomY + "px";
+      redDot.style.left = randomX + "px";
+
+      redDots.push(redDot);
+      grid.appendChild(redDot);
+    }
+
+    function getRandomInt(max) {
+      return Math.floor(Math.random() * Math.floor(max));
+    }
+
+    function updateScore() {
+      scoreElement.innerText = "Score: " + score;
+    }
+
+    // Spawn initial red dots
+    for (var i = 0; i < 5; i++) {
+      spawnRedDot();
+    }
+  </script>
+</body>
+</html>
