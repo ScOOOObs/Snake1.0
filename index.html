@@ -5,6 +5,12 @@
     body {
       background-color: #f5deb3; /* Light Brown */
     }
+	.black-dot {
+  width: 20px;
+  height: 20px;
+  background-color: black;
+  position: absolute;
+}
 
     #dot {
       width: 20px;
@@ -24,6 +30,15 @@
       position: absolute;
     }
 
+    .arrow {
+      width: 0;
+      height: 0;
+      border-left: 20px solid transparent;
+      border-right: 20px solid transparent;
+      border-bottom: 20px solid black;
+      position: absolute;
+    }
+
     #grid {
       width: calc(100% - 200px);
       height: calc(100vh - 200px);
@@ -40,6 +55,12 @@
       color: white;
       font-size: 24px;
     }
+	.blue-dot {
+  width: 20px;
+  height: 20px;
+  background-color: blue;
+  position: absolute;
+}
   </style>
 </head>
 <body>
@@ -48,161 +69,361 @@
   <div id="score">Score: 0</div>
 
   <script>
+	var maxBlackDots = 2;
+	var blackDots = [];
     var grid = document.getElementById("grid");
     var dot = document.getElementById("dot");
     var dotPosition = { x: 0, y: 0 };
-    var step = 20;
+    var step = 1;// Reduced the step value for slower movement
     var direction = null;
     var intervalId = null;
     var isFirstMove = true;
     var redDots = [];
+    var arrows = [];
     var maxRedDots = 5;
+    var maxArrows = 10;
     var score = 0;
     var scoreElement = document.getElementById("score");
 
-    document.addEventListener("keydown", handleKeyPress);
 
-    function handleKeyPress(event) {
-      var keyPressed = event.key.toLowerCase();
 
-      if (keyPressed === "w" || keyPressed === "a" || keyPressed === "s" || keyPressed === "d") {
-        if (isFirstMove) {
-          isFirstMove = false;
-          dot.style.display = "block"; // Show the dot
-          dotPosition.x = grid.offsetWidth / 2; // Set initial X position to center
-          dotPosition.y = grid.offsetHeight / 2; // Set initial Y position to center
-          dot.style.top = dotPosition.y + "px";
-          dot.style.left = dotPosition.x + "px";
-        }
 
-        if (direction !== null && keyPressed === direction) {
-          return; // Ignore the same direction
-        }
+function getRandomInt(max) {
+  return Math.floor(Math.random() * max);
+}
 
-        clearInterval(intervalId);
+function calculateDistance(x1, y1, x2, y2) {
+  var dx = x2 - x1;
+  var dy = y2 - y1;
+  return Math.sqrt(dx * dx + dy * dy);
+}
 
-        switch (keyPressed) {
-          case "w":
-            dotPosition.y -= step;
-            break;
-          case "a":
-            dotPosition.x -= step;
-            break;
-          case "s":
-            dotPosition.y += step;
-            break;
-          case "d":
-            dotPosition.x += step;
-            break;
-        }
+setInterval(spawnBlackDot, 5000);
 
-        dot.style.top = dotPosition.y + "px";
-        dot.style.left = dotPosition.x + "px";
+function getRandomInt(max) {
+  return Math.floor(Math.random() * max);
+}
 
-        intervalId = setInterval(moveDot, 100);
-        direction = keyPressed;
+function calculateDistance(x1, y1, x2, y2) {
+  var dx = x2 - x1;
+  var dy = y2 - y1;
+  return Math.sqrt(dx * dx + dy * dy);
+}
 
-        checkCollision();
-      }
-    }
+setInterval(spawnBlackDot, 5000);
+	
+document.addEventListener("keydown", handleKeyPress);
+document.addEventListener("keyup", handleKeyUp);
 
-    function moveDot() {
-      var gridRect = grid.getBoundingClientRect();
-      var dotRect = dot.getBoundingClientRect();
+var isMoving = false; // Track whether the dot is currently moving
+var pressedKeys = []; // Store the currently pressed keys
 
-      if (
-        dotRect.top <= gridRect.top ||
-        dotRect.left <= gridRect.left ||
-        dotRect.bottom >= gridRect.bottom ||
-        dotRect.right >= gridRect.right
-      ) {
-        clearInterval(intervalId);
-        restartDotPosition();
-        return;
-      }
+function handleKeyPress(event) {
+  var keyPressed = event.key.toLowerCase();
 
-      switch (direction) {
-        case "w":
-          dotPosition.y -= step;
-          break;
-        case "a":
-          dotPosition.x -= step;
-          break;
-        case "s":
-          dotPosition.y += step;
-          break;
-        case "d":
-          dotPosition.x += step;
-          break;
-      }
-
+  if (keyPressed === "w" || keyPressed === "a" || keyPressed === "s" || keyPressed === "d") {
+    if (isFirstMove) {
+      isFirstMove = false;
+      dot.style.display = "block"; // Show the dot
+      dotPosition.x = grid.offsetWidth / 2; // Set initial X position to center
+      dotPosition.y = grid.offsetHeight / 2; // Set initial Y position to center
       dot.style.top = dotPosition.y + "px";
       dot.style.left = dotPosition.x + "px";
-
-      checkCollision();
     }
+
+    if (!pressedKeys.includes(keyPressed)) {
+      pressedKeys.push(keyPressed);
+    }
+
+    clearInterval(intervalId);
+    intervalId = setInterval(moveDot, 1);
+    isMoving = true;
+
+    checkCollision();
+  }
+}
+function spawnBlackDot() {
+  if (blackDots.length >= maxBlackDots) {
+    return; // Limit reached, no more black dots
+  }
+
+  var blackDot = document.createElement("div");
+  blackDot.classList.add("black-dot");
+
+  // Generate random position within the grid
+  var randomX = getRandomInt(grid.offsetWidth - 20); // Subtract black dot width
+  var randomY = getRandomInt(grid.offsetHeight - 20); // Subtract black dot height
+
+  blackDot.style.top = randomY + "px";
+  blackDot.style.left = randomX + "px";
+
+  // Spawn a blue dot on the black dot's position
+  var blueDot = document.createElement("div");
+  blueDot.classList.add("blue-dot");
+  blueDot.style.top = randomY + "px";
+  blueDot.style.left = randomX + "px";
+
+  blackDots.push(blackDot);
+  grid.appendChild(blackDot);
+  grid.appendChild(blueDot);
+
+  // Move the black dot towards the green dot
+  moveBlackDot(blackDot, blueDot);
+}
+
+function moveBlackDot(blackDot, blueDot) {
+  var intervalId = setInterval(function () {
+    var blackDotRect = blackDot.getBoundingClientRect();
+    var blueDotRect = blueDot.getBoundingClientRect();
+
+    var blackDotX = blackDotRect.left + blackDotRect.width / 2;
+    var blackDotY = blackDotRect.top + blackDotRect.height / 2;
+
+    var blueDotX = blueDotRect.left + blueDotRect.width / 2;
+    var blueDotY = blueDotRect.top + blueDotRect.height / 2;
+
+    var distance = calculateDistance(blackDotX, blackDotY, blueDotX, blueDotY);
+
+    // Check if the black dot has reached the green dot
+    if (distance <= 1) {
+      clearInterval(intervalId);
+      return;
+    }
+
+    var dx = (blueDotX - blackDotX) / distance;
+    var dy = (blueDotY - blackDotY) / distance;
+
+    var newX = blackDotX + dx * step;
+    var newY = blackDotY + dy * step;
+
+    blackDot.style.left = newX - blackDotRect.width / 2 + "px";
+    blackDot.style.top = newY - blackDotRect.height / 2 + "px";
+  }, 1);
+}
+
+
+function handleKeyUp(event) {
+  var keyReleased = event.key.toLowerCase();
+
+  if (keyReleased === "w" || keyReleased === "a" || keyReleased === "s" || keyReleased === "d") {
+    var index = pressedKeys.indexOf(keyReleased);
+    if (index !== -1) {
+      pressedKeys.splice(index, 1);
+    }
+  }
+
+  if (pressedKeys.length === 0) {
+    clearInterval(intervalId);
+    isMoving = false;
+  }
+}
+
+function moveDot() {
+  if (!isMoving) {
+    return; // Stop moving if no keys are being pressed
+  }
+
+  // Calculate movement in both X and Y directions
+  var dx = 0;
+  var dy = 0;
+
+  if (pressedKeys.includes("w")) {
+    dy -= step;
+  }
+  if (pressedKeys.includes("a")) {
+    dx -= step;
+  }
+  if (pressedKeys.includes("s")) {
+    dy += step;
+  }
+  if (pressedKeys.includes("d")) {
+    dx += step;
+  }
+
+  // Calculate the potential new position
+  var newDotX = dotPosition.x + dx;
+  var newDotY = dotPosition.y + dy;
+
+  // Calculate the boundaries of the inner rectangle
+  var innerRect = grid.getBoundingClientRect();
+  var innerLeft = innerRect.left + dot.offsetWidth;
+  var innerTop = innerRect.top + dot.offsetHeight;
+  var innerRight = innerRect.right - dot.offsetWidth;
+  var innerBottom = innerRect.bottom - dot.offsetHeight;
+
+  // Check if the new position is within the boundaries of the inner rectangle
+  if (
+    newDotX >= innerLeft &&
+    newDotX <= innerRight &&
+    newDotY >= innerTop &&
+    newDotY <= innerBottom
+  ) {
+    dotPosition.x = newDotX;
+    dotPosition.y = newDotY;
+
+    dot.style.top = dotPosition.y + "px";
+    dot.style.left = dotPosition.x + "px";
+  }
+
+  checkCollision();
+}
+
 
     function restartDotPosition() {
       isFirstMove = true;
       dot.style.display = "none"; // Hide the dot
       dotPosition.x = 0;
       dotPosition.y = 0;
+      score = 0;
+      updateScore();
     }
 
-    function checkCollision() {
-      var dotRect = dot.getBoundingClientRect();
+function checkCollision() {
+  var dotRect = dot.getBoundingClientRect();
 
-      for (var i = 0; i < redDots.length; i++) {
-        var redDot = redDots[i];
-        var redDotRect = redDot.getBoundingClientRect();
+  // Check collision with red dots
+  for (var i = 0; i < redDots.length; i++) {
+    var redDot = redDots[i];
+    var redDotRect = redDot.getBoundingClientRect();
 
-        if (
-          dotRect.top < redDotRect.bottom &&
-          dotRect.right > redDotRect.left &&
-          dotRect.bottom > redDotRect.top &&
-          dotRect.left < redDotRect.right
-        ) {
-          redDot.remove();
-          redDots.splice(i, 1);
-          i--;
-          spawnRedDot();
-          score++;
-          updateScore();
-        }
-      }
+    if (
+      dotRect.top < redDotRect.bottom &&
+      dotRect.right > redDotRect.left &&
+      dotRect.bottom > redDotRect.top &&
+      dotRect.left < redDotRect.right
+    ) {
+      redDot.remove();
+      redDots.splice(i, 1);
+      i--;
+      spawnRedDot();
+      score++;
+      updateScore();
     }
+  }
+
+  // Check collision with arrows
+  var arrowHit = false;
+  for (var i = 0; i < arrows.length; i++) {
+    var arrow = arrows[i];
+    var arrowRect = arrow.getBoundingClientRect();
+
+    if (
+      dotRect.top < arrowRect.bottom &&
+      dotRect.right > arrowRect.left &&
+      dotRect.bottom > arrowRect.top &&
+      dotRect.left < arrowRect.right
+    ) {
+      arrowHit = true;
+      break;
+    }
+  }
+
+  if (arrowHit) {
+    resetGreenDot();
+  }
+}
+
+function resetGreenDot() {
+  dot.style.display = "none"; // Hide the dot
+
+  dotPosition.x = grid.offsetWidth / 2; // Set the X position to the center of the grid
+  dotPosition.y = grid.offsetHeight / 2; // Set the Y position to the center of the grid
+
+  dot.style.top = dotPosition.y + "px";
+  dot.style.left = dotPosition.x + "px";
+
+  score = 0;
+  updateScore();
+
+  setTimeout(function () {
+    dot.style.display = "block"; // Show the dot again after a delay
+  }, 1000);
+}
+
+
 
     function spawnRedDot() {
-      if (redDots.length >= maxRedDots) {
-        return; // Limit reached, no more red dots
+  if (redDots.length >= maxRedDots) {
+    return; // Limit reached, no more red dots
+  }
+
+  var redDot = document.createElement("div");
+  redDot.classList.add("red-dot");
+
+  // Generate random position within the grid
+  var randomX = getRandomInt(grid.offsetWidth - 20); // Subtract red dot width
+  var randomY = getRandomInt(grid.offsetHeight - 20); // Subtract red dot height
+
+  redDot.style.top = randomY + "px";
+  redDot.style.left = randomX + "px";
+
+  redDots.push(redDot);
+  grid.appendChild(redDot);
+
+  score++; // Increment the score
+  updateScore();
+
+  // Check if the score is a multiple of 5
+  if (score % 5 === 0) {
+    increaseMaxArrows();
+  }
+}
+
+function increaseMaxArrows() {
+  maxArrows += 2; // Increase the maximum amount of arrows by two
+}
+
+    function spawnArrow() {
+  if (arrows.length >= maxArrows) {
+    return; // Limit reached, no more arrows
+  }
+
+  var arrow = document.createElement("div");
+  arrow.classList.add("arrow");
+
+  var randomY = getRandomInt(grid.offsetHeight - 20); // Subtract arrow height
+
+  arrow.style.top = randomY + "px";
+  arrow.style.left = "-20px"; // Set the X position to the left side
+
+  arrows.push(arrow);
+  grid.appendChild(arrow);
+}
+
+function moveArrows() {
+  for (var i = 0; i < arrows.length; i++) {
+    var arrow = arrows[i];
+    var arrowRect = arrow.getBoundingClientRect();
+    var arrowPosition = arrowRect.left < 0 ? arrowRect.right : arrowRect.left;
+    if (arrowRect.left < 0 || arrowRect.right > grid.offsetWidth) {
+      arrow.remove();
+      arrows.splice(i, 1);
+      i--;
+    } else {
+      if (arrowRect.left < 0) {
+        arrow.style.left = arrowPosition + step + "px";
+      } else {
+        arrow.style.left = arrowPosition - step + "px";
       }
+    }
+  }
 
-      var redDot = document.createElement("div");
-      redDot.classList.add("red-dot");
+  if (arrows.length < maxArrows) {
+    spawnArrow();
+  }
+}
+setInterval(moveArrows, 300);
 
-      // Generate random position within the grid
-      var randomX = getRandomInt(grid.offsetWidth - 20); // Subtract red dot width
-      var randomY = getRandomInt(grid.offsetHeight - 20); // Subtract red dot height
-
-      redDot.style.top = randomY + "px";
-      redDot.style.left = randomX + "px";
-
-      redDots.push(redDot);
-      grid.appendChild(redDot);
+    function updateScore() {
+      scoreElement.textContent = "Score: " + score;
     }
 
     function getRandomInt(max) {
-      return Math.floor(Math.random() * Math.floor(max));
+      return Math.floor(Math.random() * max);
     }
 
-    function updateScore() {
-      scoreElement.innerText = "Score: " + score;
-    }
-
-    // Spawn initial red dots
-    for (var i = 0; i < 5; i++) {
-      spawnRedDot();
-    }
+    setInterval(spawnRedDot, 2000);
+    setInterval(spawnArrow, 3000);
   </script>
 </body>
 </html>
